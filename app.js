@@ -1,20 +1,19 @@
-// ── DATA ──────────────────────────────────────────────
-let entries = JSON.parse(localStorage.getItem('em_entries') || '[]');
-let currentType = 'income';
-let currentPeriod = 'today';
-let chartRange = 7;
-let mainChart = null;
+var entries = JSON.parse(localStorage.getItem('em_entries') || '[]');
+var currentType = 'income';
+var currentPeriod = 'today';
+var chartRange = 7;
+var mainChart = null;
 
 function save() {
   localStorage.setItem('em_entries', JSON.stringify(entries));
 }
 
-// ── NAVIGATION ────────────────────────────────────────
 function showSection(name) {
-  ['dashboard','add','history','charts'].forEach(s => {
-    document.getElementById(s).classList.add('hidden');
-    document.getElementById('nav-' + s).classList.remove('active');
-  });
+  var sections = ['dashboard','add','history','charts'];
+  for (var i = 0; i < sections.length; i++) {
+    document.getElementById(sections[i]).classList.add('hidden');
+    document.getElementById('nav-' + sections[i]).classList.remove('active');
+  }
   document.getElementById(name).classList.remove('hidden');
   document.getElementById('nav-' + name).classList.add('active');
   if (name === 'dashboard') renderDashboard();
@@ -22,28 +21,28 @@ function showSection(name) {
   if (name === 'charts') renderChart();
 }
 
-// ── PERIOD TABS ───────────────────────────────────────
 function setPeriod(p) {
   currentPeriod = p;
-  ['today','week','month'].forEach(t => {
-    document.getElementById('tab-' + t).classList.remove('active');
-  });
+  var tabs = ['today','week','month'];
+  for (var i = 0; i < tabs.length; i++) {
+    document.getElementById('tab-' + tabs[i]).classList.remove('active');
+  }
   document.getElementById('tab-' + p).classList.add('active');
   renderDashboard();
 }
 
 function getDateRange(period) {
-  const now = new Date();
-  const today = now.toISOString().slice(0, 10);
+  var now = new Date();
+  var today = now.toISOString().slice(0, 10);
   if (period === 'today') return { start: today, end: today };
   if (period === 'week') {
-    const d = new Date(now);
+    var d = new Date(now);
     d.setDate(d.getDate() - 6);
     return { start: d.toISOString().slice(0, 10), end: today };
   }
   if (period === 'month') {
-    const d = new Date(now.getFullYear(), now.getMonth(), 1);
-    return { start: d.toISOString().slice(0, 10), end: today };
+    var d2 = new Date(now.getFullYear(), now.getMonth(), 1);
+    return { start: d2.toISOString().slice(0, 10), end: today };
   }
 }
 
@@ -51,34 +50,47 @@ function inRange(entry, range) {
   return entry.date >= range.start && entry.date <= range.end;
 }
 
-// ── DASHBOARD ─────────────────────────────────────────
 function renderDashboard() {
-  const range = getDateRange(currentPeriod);
-  const filtered = entries.filter(e => inRange(e, range));
+  var range = getDateRange(currentPeriod);
+  var filtered = [];
+  for (var i = 0; i < entries.length; i++) {
+    if (inRange(entries[i], range)) filtered.push(entries[i]);
+  }
 
-  const incomeEntries = filtered.filter(e => e.type === 'income');
-  const expenseEntries = filtered.filter(e => e.type === 'expense');
+  var totalIncome = 0;
+  var totalExpense = 0;
+  var takeaway = 0; var dinein = 0; var parcel = 0;
+  var food = 0; var salary = 0; var bills = 0;
 
-  const totalIncome = incomeEntries.reduce((s, e) => s + e.amount, 0);
-  const totalExpense = expenseEntries.reduce((s, e) => s + e.amount, 0);
-  const net = totalIncome - totalExpense;
+  for (var i = 0; i < filtered.length; i++) {
+    var e = filtered[i];
+    if (e.type === 'income') {
+      totalIncome += e.amount;
+      if (e.category === 'takeaway') takeaway += e.amount;
+      if (e.category === 'dinein') dinein += e.amount;
+      if (e.category === 'parcel') parcel += e.amount;
+    } else {
+      totalExpense += e.amount;
+      if (e.category === 'food') food += e.amount;
+      if (e.category === 'salary') salary += e.amount;
+      if (e.category === 'bills') bills += e.amount;
+    }
+  }
+
+  var net = totalIncome - totalExpense;
 
   document.getElementById('total-income').textContent = 'PKR ' + totalIncome.toLocaleString();
   document.getElementById('total-expense').textContent = 'PKR ' + totalExpense.toLocaleString();
   document.getElementById('net-profit').textContent = (net < 0 ? '-PKR ' : 'PKR ') + Math.abs(net).toLocaleString();
+  document.getElementById('inc-takeaway').textContent = 'PKR ' + takeaway.toLocaleString();
+  document.getElementById('inc-dinein').textContent = 'PKR ' + dinein.toLocaleString();
+  document.getElementById('inc-parcel').textContent = 'PKR ' + parcel.toLocaleString();
+  document.getElementById('exp-food').textContent = 'PKR ' + food.toLocaleString();
+  document.getElementById('exp-salary').textContent = 'PKR ' + salary.toLocaleString();
+  document.getElementById('exp-bills').textContent = 'PKR ' + bills.toLocaleString();
 
-  const byCategory = (cat) => incomeEntries.filter(e => e.category === cat).reduce((s,e) => s+e.amount, 0);
-  document.getElementById('inc-takeaway').textContent = 'PKR ' + byCategory('takeaway').toLocaleString();
-  document.getElementById('inc-dinein').textContent = 'PKR ' + byCategory('dinein').toLocaleString();
-  document.getElementById('inc-parcel').textContent = 'PKR ' + byCategory('parcel').toLocaleString();
-
-  const byExp = (cat) => expenseEntries.filter(e => e.category === cat).reduce((s,e) => s+e.amount, 0);
-  document.getElementById('exp-food').textContent = 'PKR ' + byExp('food').toLocaleString();
-  document.getElementById('exp-salary').textContent = 'PKR ' + byExp('salary').toLocaleString();
-  document.getElementById('exp-bills').textContent = 'PKR ' + byExp('bills').toLocaleString();
-
-  const profitCard = document.getElementById('profit-card');
-  const hint = document.getElementById('profit-hint');
+  var profitCard = document.getElementById('profit-card');
+  var hint = document.getElementById('profit-hint');
   profitCard.classList.remove('positive','negative');
   if (filtered.length === 0) {
     hint.textContent = 'No entries yet';
@@ -93,51 +105,51 @@ function renderDashboard() {
   }
 }
 
-// ── ADD ENTRY ─────────────────────────────────────────
 function setType(type) {
   currentType = type;
   document.getElementById('type-income').classList.toggle('active', type === 'income');
   document.getElementById('type-expense').classList.toggle('active', type === 'expense');
-
-  const cat = document.getElementById('entry-category');
-  cat.innerHTML = type === 'income'
-    ? `
+  var cat = document.getElementById('entry-category');
+  if (type === 'income') {
+    cat.innerHTML = '
 Takeaway
-
-       
 Dine-in
-
-       
 Parcel
-`
-    : `
-Food & Ingredients
-
-       
+';
+  } else {
+    cat.innerHTML = '
+Food and Ingredients
 Staff Salary
-
-       
-Bills & Utilities
-`;
+Bills and Utilities
+';
+  }
 }
 
 function addEntry() {
-  const amount = parseFloat(document.getElementById('entry-amount').value);
-  const category = document.getElementById('entry-category').value;
-  const date = document.getElementById('entry-date').value;
-  const note = document.getElementById('entry-note').value.trim();
-  const msg = document.getElementById('form-msg');
+  var amount = parseFloat(document.getElementById('entry-amount').value);
+  var category = document.getElementById('entry-category').value;
+  var date = document.getElementById('entry-date').value;
+  var note = document.getElementById('entry-note').value;
+  var msg = document.getElementById('form-msg');
 
-  if (!amount || amount <= 0) { msg.style.color = '#A32D2D'; msg.textContent = 'Please enter a valid amount.'; return; }
-  if (!date) { msg.style.color = '#A32D2D'; msg.textContent = 'Please select a date.'; return; }
+  if (!amount || amount <= 0) {
+    msg.style.color = '#A32D2D';
+    msg.textContent = 'Please enter a valid amount.';
+    return;
+  }
+  if (!date) {
+    msg.style.color = '#A32D2D';
+    msg.textContent = 'Please select a date.';
+    return;
+  }
 
-  const entry = {
+  var entry = {
     id: Date.now(),
     type: currentType,
-    category,
-    amount,
-    date,
-    note
+    category: category,
+    amount: amount,
+    date: date,
+    note: note
   };
 
   entries.unshift(entry);
@@ -147,25 +159,27 @@ function addEntry() {
   document.getElementById('entry-note').value = '';
   msg.style.color = '#0F6E56';
   msg.textContent = 'Entry saved successfully!';
-  setTimeout(() => msg.textContent = '', 2500);
+  setTimeout(function() { msg.textContent = ''; }, 2500);
 }
 
-// ── HISTORY ───────────────────────────────────────────
-const catLabels = {
-  takeaway: 'Takeaway', dinein: 'Dine-in', parcel: 'Parcel',
-  food: 'Food & Ingredients', salary: 'Staff Salary', bills: 'Bills & Utilities'
-};
-
 function renderHistory() {
-  const typeFilter = document.getElementById('filter-type').value;
-  const catFilter = document.getElementById('filter-cat').value;
-  const dateFilter = document.getElementById('filter-date').value;
-  const list = document.getElementById('history-list');
+  var typeFilter = document.getElementById('filter-type').value;
+  var catFilter = document.getElementById('filter-cat').value;
+  var dateFilter = document.getElementById('filter-date').value;
+  var list = document.getElementById('history-list');
+  var catLabels = {
+    takeaway: 'Takeaway', dinein: 'Dine-in', parcel: 'Parcel',
+    food: 'Food and Ingredients', salary: 'Staff Salary', bills: 'Bills and Utilities'
+  };
 
-  let filtered = [...entries];
-  if (typeFilter !== 'all') filtered = filtered.filter(e => e.type === typeFilter);
-  if (catFilter !== 'all') filtered = filtered.filter(e => e.category === catFilter);
-  if (dateFilter) filtered = filtered.filter(e => e.date === dateFilter);
+  var filtered = [];
+  for (var i = 0; i < entries.length; i++) {
+    var e = entries[i];
+    if (typeFilter !== 'all' && e.type !== typeFilter) continue;
+    if (catFilter !== 'all' && e.category !== catFilter) continue;
+    if (dateFilter && e.date !== dateFilter) continue;
+    filtered.push(e);
+  }
 
   if (filtered.length === 0) {
     list.innerHTML = '
@@ -174,39 +188,44 @@ No entries found.
     return;
   }
 
-  list.innerHTML = filtered.map(e => `
-    
-
-      
-
-        
-          ${e.type === 'income' ? 'Income' : 'Expense'}
-        
-        ${catLabels[e.category] || e.category}
-        ${e.date}${e.note ? ' · ' + e.note : ''}
-      
-
-      
-
-        
-          ${e.type === 'income' ? '+' : '-'}PKR ${e.amount.toLocaleString()}
-        
-        🗑️
-      
-
-    
-
-  `).join('');
+  var html = '';
+  for (var i = 0; i < filtered.length; i++) {
+    var e = filtered[i];
+    var badgeClass = e.type === 'income' ? 'badge-income' : 'badge-expense';
+    var amtClass = e.type === 'income' ? 'amount-income' : 'amount-expense';
+    var sign = e.type === 'income' ? '+' : '-';
+    var label = catLabels[e.category] || e.category;
+    var meta = e.date + (e.note ? ' - ' + e.note : '');
+    html += '
+';
+    html += '
+';
+    html += '' + (e.type === 'income' ? 'Income' : 'Expense') + '';
+    html += '' + label + '';
+    html += '' + meta + '';
+    html += '
+';
+    html += '
+';
+    html += '' + sign + 'PKR ' + e.amount.toLocaleString() + '';
+    html += 'X';
+    html += '
+';
+  }
+  list.innerHTML = html;
 }
 
 function deleteEntry(id) {
   if (!confirm('Delete this entry?')) return;
-  entries = entries.filter(e => e.id !== id);
+  var newEntries = [];
+  for (var i = 0; i < entries.length; i++) {
+    if (entries[i].id !== id) newEntries.push(entries[i]);
+  }
+  entries = newEntries;
   save();
   renderHistory();
 }
 
-// ── CHARTS ────────────────────────────────────────────
 function setChartRange(days) {
   chartRange = days;
   document.getElementById('range-7').classList.toggle('active', days === 7);
@@ -215,20 +234,26 @@ function setChartRange(days) {
 }
 
 function renderChart() {
-  const labels = [];
-  const incomeData = [];
-  const expenseData = [];
-  const now = new Date();
+  var labels = [];
+  var incomeData = [];
+  var expenseData = [];
+  var now = new Date();
 
-  for (let i = chartRange - 1; i >= 0; i--) {
-    const d = new Date(now);
+  for (var i = chartRange - 1; i >= 0; i--) {
+    var d = new Date(now);
     d.setDate(d.getDate() - i);
-    const dateStr = d.toISOString().slice(0, 10);
-    const label = d.toLocaleDateString('en-PK', { month: 'short', day: 'numeric' });
+    var dateStr = d.toISOString().slice(0, 10);
+    var label = d.toLocaleDateString('en-PK', { month: 'short', day: 'numeric' });
     labels.push(label);
-    const dayEntries = entries.filter(e => e.date === dateStr);
-    incomeData.push(dayEntries.filter(e => e.type === 'income').reduce((s,e) => s+e.amount, 0));
-    expenseData.push(dayEntries.filter(e => e.type === 'expense').reduce((s,e) => s+e.amount, 0));
+    var inc = 0; var exp = 0;
+    for (var j = 0; j < entries.length; j++) {
+      if (entries[j].date === dateStr) {
+        if (entries[j].type === 'income') inc += entries[j].amount;
+        else exp += entries[j].amount;
+      }
+    }
+    incomeData.push(inc);
+    expenseData.push(exp);
   }
 
   if (mainChart) mainChart.destroy();
@@ -236,7 +261,7 @@ function renderChart() {
   mainChart = new Chart(document.getElementById('mainChart'), {
     type: 'bar',
     data: {
-      labels,
+      labels: labels,
       datasets: [
         {
           label: 'Income',
@@ -259,24 +284,13 @@ function renderChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          callbacks: {
-            label: ctx => 'PKR ' + ctx.parsed.y.toLocaleString()
-          }
-        }
-      },
+      plugins: { legend: { display: false } },
       scales: {
-        x: {
-          ticks: { autoSkip: chartRange > 15, maxRotation: 45, font: { size: 11 } },
-          grid: { display: false }
-        },
+        x: { grid: { display: false } },
         y: {
           beginAtZero: true,
           ticks: {
-            callback: v => 'PKR ' + v.toLocaleString(),
-            font: { size: 11 }
+            callback: function(v) { return 'PKR ' + v.toLocaleString(); }
           }
         }
       }
@@ -284,6 +298,5 @@ function renderChart() {
   });
 }
 
-// ── INIT ──────────────────────────────────────────────
 document.getElementById('entry-date').value = new Date().toISOString().slice(0, 10);
 renderDashboard();
