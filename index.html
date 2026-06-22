@@ -1,1 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Expense Manager</title>
+  <link rel="stylesheet" href="style.css" />
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#185FA5" />
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+</head>
+<body>
 
+  <header>
+    <div class="header-inner">
+      <div class="logo">
+        <span class="logo-icon">📊</span>
+        <span>Expense Manager</span>
+      </div>
+      <nav>
+        <button onclick="showSection('dashboard')" id="nav-dashboard" class="nav-btn active">Dashboard</button>
+        <button onclick="showSection('add')" id="nav-add" class="nav-btn">Add Entry</button>
+        <button onclick="showSection('history')" id="nav-history" class="nav-btn">History</button>
+        <button onclick="showSection('charts')" id="nav-charts" class="nav-btn">Charts</button>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- DASHBOARD -->
+    <section id="dashboard" class="section">
+      <h2>Dashboard</h2>
+      <div class="period-tabs">
+        <button onclick="setPeriod('today')" id="tab-today" class="tab active">Today</button>
+        <button onclick="setPeriod('week')" id="tab-week" class="tab">This Week</button>
+        <button onclick="setPeriod('month')" id="tab-month" class="tab">This Month</button>
+      </div>
+      <div class="cards-grid">
+        <div class="card income">
+          <p class="card-label">Total Income</p>
+          <p class="card-value" id="total-income">PKR 0</p>
+          <div class="card-sub">
+            <span>Takeaway: <b id="inc-takeaway">0</b></span>
+            <span>Dine-in: <b id="inc-dinein">0</b></span>
+            <span>Parcel: <b id="inc-parcel">0</b></span>
+          </div>
+        </div>
+        <div class="card expense">
+          <p class="card-label">Total Expenses</p>
+          <p class="card-value" id="total-expense">PKR 0</p>
+          <div class="card-sub">
+            <span>Food: <b id="exp-food">0</b></span>
+            <span>Salary: <b id="exp-salary">0</b></span>
+            <span>Bills: <b id="exp-bills">0</b></span>
+          </div>
+        </div>
+        <div class="card profit" id="profit-card">
+          <p class="card-label">Net Profit / Loss</p>
+          <p class="card-value" id="net-profit">PKR 0</p>
+          <p class="card-hint" id="profit-hint">No entries yet</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ADD ENTRY -->
+    <section id="add" class="section hidden">
+      <h2>Add Entry</h2>
+      <div class="form-toggle">
+        <button onclick="setType('income')" id="type-income" class="toggle-btn active">Income</button>
+        <button onclick="setType('expense')" id="type-expense" class="toggle-btn">Expense</button>
+      </div>
+      <div class="form-card">
+        <div class="form-group">
+          <label>Amount (PKR)</label>
+          <input type="number" id="entry-amount" placeholder="e.g. 5000" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="entry-category">
+            <option value="takeaway">Takeaway</option>
+            <option value="dinein">Dine-in</option>
+            <option value="parcel">Parcel</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="entry-date" />
+        </div>
+        <div class="form-group">
+          <label>Note (optional)</label>
+          <input type="text" id="entry-note" placeholder="e.g. Friday dinner rush" />
+        </div>
+        <button class="submit-btn" onclick="addEntry()">Save Entry</button>
+        <p id="form-msg" class="form-msg"></p>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section id="history" class="section hidden">
+      <h2>History</h2>
+      <div class="filter-row">
+        <select id="filter-type" onchange="renderHistory()">
+          <option value="all">All Types</option>
+          <option value="income">Income only</option>
+          <option value="expense">Expense only</option>
+        </select>
+        <select id="filter-cat" onchange="renderHistory()">
+          <option value="all">All Categories</option>
+          <option value="takeaway">Takeaway</option>
+          <option value="dinein">Dine-in</option>
+          <option value="parcel">Parcel</option>
+          <option value="food">Food & Ingredients</option>
+          <option value="salary">Staff Salary</option>
+          <option value="bills">Bills & Utilities</option>
+        </select>
+        <input type="date" id="filter-date" onchange="renderHistory()" placeholder="Filter by date" />
+      </div>
+      <div id="history-list"></div>
+    </section>
+
+    <!-- CHARTS -->
+    <section id="charts" class="section hidden">
+      <h2>Charts</h2>
+      <div class="chart-toggle">
+        <button onclick="setChartRange(7)" id="range-7" class="tab active">Last 7 Days</button>
+        <button onclick="setChartRange(30)" id="range-30" class="tab">Last 30 Days</button>
+      </div>
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:#185FA5"></span>Income</span>
+        <span><span class="legend-dot" style="background:#E24B4A"></span>Expenses</span>
+      </div>
+      <div style="position:relative; width:100%; height:320px;">
+        <canvas id="mainChart" role="img" aria-label="Bar chart showing income vs expenses over time">Income vs expenses chart</canvas>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
